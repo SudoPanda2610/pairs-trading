@@ -1,36 +1,48 @@
-# Statistical Arbitrage: Cointegration Pairs Trading
+![Pairs Trading banner](assets/banner.svg)
 
-A quantitative trading framework that identifies and trades cointegrated stock pairs in the S&P 500. This project implements a mean-reversion strategy using the Engle-Granger two-step method and Augmented Dickey-Fuller (ADF) tests to ensure statistical rigor.
+# Pairs Trading
 
-Key Feature: To prevent lookahead bias (a common flaw in backtests), this project uses a Rolling Window approach—pairs are selected based only on past data (formation period) and traded on unseen future data (trading period).
+A statistical-arbitrage research framework for identifying cointegrated assets and testing mean-reversion strategies.
 
-## Features
+## Method
 
-* **Rigorous Statistical Screening:** Uses the Augmented Dickey-Fuller (ADF) test to find pairs with stationary spreads (p-value < 0.05).
-* **Walk-Forward Analysis:**
-    * **Formation Period (60 days):** Calibrates the hedge ratio (Beta) and tests for cointegration.
-    * **Trading Period (20 days):** Executes trades out-of-sample using parameters from the formation period.
-* **Dynamic Risk Management:**
-    * Entry: Z-Score < -2.0 or > +2.0
-    * Exit: Mean reversion (Z-Score = 0)
-    * Stop Loss: Spread divergence > 4.0 standard deviations
-* **Automated Data Pipeline:** Fetches, cleans, and aligns historical pricing data using yfinance and pandas.
+Candidate pairs are evaluated with the Engle-Granger procedure:
 
-## Tech Stack
+1. Estimate a hedge relationship with ordinary least squares.
+2. Test the residual spread for stationarity.
+3. Measure mean-reversion strength with the Hurst exponent.
+4. Trade standardized spread deviations with explicit entry, exit, and stop rules.
 
-* **Python 3.10+**
-* **Pandas & NumPy:** Vectorized data manipulation and time-series alignment.
-* **Statsmodels:** Econometric tests (OLS regression, ADF unit root test).
-* **YFinance:** Market data ingestion.
+The backtester records positions, trade-level PnL, total return, Sharpe ratio, drawdown, and win rate.
 
-## Project Structure
+## Run
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python run.py
+```
+
+Useful experiment modes:
+
+```bash
+python run.py --days 500 --stocks 20 --threshold 2.5
+python run.py --sensitivity
+python -m unittest -v
+```
+
+## Repository layout
 
 ```text
-├── run.py                 # Main entry point
-├── requirements.txt       # Dependencies
-└── src/
-    ├── __init__.py        # Package exposure
-    ├── backtest.py        # RollingWindowBacktest engine
-    ├── data_loader.py     # Yahoo Finance data fetcher & cleaner
-    ├── pairs_finder.py    # Cointegration logic (ADF test, Half-life)
-    └── trading_strategy.py # Z-score signal generation & execution
+src/pairs_finder.py       Cointegration and Hurst diagnostics
+src/trading_strategy.py   Signal and position rules
+src/backtest.py           Portfolio and trade accounting
+run.py                    Experiment entry point
+test_real_data.py         Real-data integration checks
+backtest_trades.csv       Recorded trade ledger
+```
+
+## Research scope
+
+Cointegration is estimated from finite historical samples and can break under structural change. Reported backtests do not include every execution cost, borrow constraint, or capacity limit required for live deployment.
