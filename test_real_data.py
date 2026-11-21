@@ -1,40 +1,31 @@
 """
-Quick test with known good pairs
+Smoke test against real prices (needs network access for yfinance).
+
+Run directly:
+    python test_real_data.py
 """
 
-# Run this to test:
-# python test_real_data.py
+from src.backtest import RollingWindowBacktest
+from src.data_loader import download_stock_data
 
-import numpy as np
-from src.backtest import run_pairs_backtest, print_results
 
-print("Testing with sector-specific stocks that should be cointegrated...")
-print()
+def main():
+    # Sector peers that are plausible cointegration candidates
+    energy_stocks = ['XOM', 'CVX', 'COP', 'SLB']
+    consumer_stocks = ['KO', 'PEP', 'WMT', 'TGT']
+    tickers = energy_stocks + consumer_stocks
 
-# Test energy sector (very likely to be cointegrated)
-energy_stocks = ['XOM', 'CVX', 'COP', 'SLB']
+    data = download_stock_data(tickers, '2023-01-01', '2024-01-01')
 
-# Test consumer staples (also likely cointegrated)
-consumer_stocks = ['KO', 'PEP', 'WMT', 'TGT']
+    backtester = RollingWindowBacktest(data, formation_period=60, trading_period=20)
+    backtester.run()
+    backtester.get_summary()
 
-# Combine
-tickers = energy_stocks + consumer_stocks
+    if backtester.results:
+        print("\nOK: found pairs and executed trades.")
+    else:
+        print("\nNo trades executed. Try different stocks or a longer period.")
 
-results = run_pairs_backtest(
-    tickers=tickers,
-    use_real_data=True,
-    start_date='2023-01-01',
-    end_date='2024-01-01',
-    entry_threshold=1.5,  # More aggressive to get more trades
-    lookback=40,  # Shorter lookback = more responsive
-    verbose=True
-)
 
-print_results(results)
-
-if results.num_trades > 0:
-    print("\n✅ SUCCESS! Found pairs and executed trades!")
-    print("Use these results on your resume!")
-else:
-    print("\n⚠️ No trades executed. Try different stocks or time period.")
-    print("Suggestion: Try --start 2022-01-01 --end 2024-01-01 for longer period")
+if __name__ == "__main__":
+    main()
