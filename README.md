@@ -10,10 +10,10 @@ Candidate pairs are evaluated with the Engle-Granger procedure:
 
 1. Estimate a hedge relationship with ordinary least squares.
 2. Test the residual spread for stationarity.
-3. Measure mean-reversion strength with the Hurst exponent.
+3. Keep pairs whose mean-reversion half-life (AR(1) fit of the spread) is between 1 and 40 days.
 4. Trade standardized spread deviations with explicit entry, exit, and stop rules.
 
-The backtester records positions, trade-level PnL, total return, Sharpe ratio, drawdown, and win rate.
+The backtester walks forward (60-day formation, 20-day trading windows), trades the lowest-p-value pair in each window using spread parameters fixed from the formation period, and reports trade count, total PnL, win rate, and average PnL.
 
 ## Run
 
@@ -24,20 +24,26 @@ pip install -r requirements.txt
 python run.py
 ```
 
-Useful experiment modes:
+Tests (offline, synthetic data):
 
 ```bash
-python run.py --days 500 --stocks 20 --threshold 2.5
-python run.py --sensitivity
 python -m unittest -v
+```
+
+Network smoke test against real prices (needs `yfinance` access):
+
+```bash
+python test_real_data.py
 ```
 
 ## Repository layout
 
 ```text
-src/pairs_finder.py       Cointegration and Hurst diagnostics
+src/pairs_finder.py       Cointegration and half-life diagnostics
 src/trading_strategy.py   Signal and position rules
-src/backtest.py           Portfolio and trade accounting
+src/backtest.py           Walk-forward backtest and trade summary
+src/data_loader.py        yfinance price download
+tests/test_core.py        Offline unit tests
 run.py                    Experiment entry point
 test_real_data.py         Real-data integration checks
 backtest_trades.csv       Recorded trade ledger
